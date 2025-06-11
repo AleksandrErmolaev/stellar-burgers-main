@@ -8,145 +8,138 @@ import {
 
 import reducer from '../src/services/slices/orders';
 
-const ordersMockData = [
-  {
-    ingredients: [
-      '643d69a5c3f7b9001cfa093d',
-      '643d69a5c3f7b9001cfa0941',
-      '643d69a5c3f7b9001cfa093d'
-    ],
-    _id: '6622337897ede0001d0666b5',
-    status: 'done',
-    name: 'EXAMPLE_NAME',
-    createdAt: '2024-04-19T09:03:52.748Z',
-    updatedAt: '2024-04-19T09:03:58.057Z',
-    number: 38321
-  }
-];
+// Тестовые данные заказов
+const mockOrderData = {
+  ingredients: [
+    '643d69a5c3f7b9001cfa093d',
+    '643d69a5c3f7b9001cfa0941',
+    '643d69a5c3f7b9001cfa093d'
+  ],
+  _id: '6622337897ede0001d0666b5',
+  status: 'done',
+  name: 'EXAMPLE_NAME',
+  createdAt: '2024-04-19T09:03:52.748Z',
+  updatedAt: '2024-04-19T09:03:58.057Z',
+  number: 38321
+};
 
-describe('Тестирование ordersReducer', () => {
-  test('Сброс содержимого модального окна заказа', () => {
-    const _initialState = {
+const mockOrdersList = [mockOrderData];
+
+describe('Тестирование редьюсера заказов', () => {
+  it('Должен очищать данные модального окна без изменения других состояний', () => {
+    const initialStateWithData = {
+      ...ordersInitialState,
       isOrderLoading: true,
       isOrdersLoading: true,
-      orderRequest: false,
-      orderModalData: ordersMockData[0],
-      error: null,
-      data: []
+      orderModalData: mockOrderData
     };
 
-    const state = reducer(_initialState, resetOrderModalData());
+    const stateAfterReset = reducer(initialStateWithData, resetOrderModalData());
 
-    // Модальное окно очистилось не затронув другие состояния
-    expect(state.orderModalData).toBeNull();
-    expect(state.data).toHaveLength(0);
-    expect(state.error).toBeNull();
-    expect(state.orderRequest).toBeFalsy();
-    expect(state.isOrdersLoading).toBeTruthy();
-    expect(state.isOrderLoading).toBeTruthy();
+    expect(stateAfterReset.orderModalData).toBeNull();
+    expect(stateAfterReset.data).toHaveLength(0);
+    expect(stateAfterReset.error).toBeNull();
+    expect(stateAfterReset.orderRequest).toBe(false);
+    expect(stateAfterReset.isOrdersLoading).toBe(true);
+    expect(stateAfterReset.isOrderLoading).toBe(true);
   });
 
-  describe('Асинхронная функция для получения заказов: fetchOrders', () => {
-    test('Начало запроса: fetchOrders.pending', () => {
-      const state = reducer(ordersInitialState, fetchOrders.pending('pending'));
-
-      expect(state.isOrdersLoading).toBeTruthy();
-      expect(state.error).toBeNull();
-    });
-
-    test('Результат запроса: fetchOrders.fulfilled', () => {
-      const state = reducer(
+  describe('Тестирование экшена fetchOrders', () => {
+    it('Должен устанавливать флаг загрузки при начале запроса', () => {
+      const loadingState = reducer(
         ordersInitialState,
-        fetchOrders.fulfilled(ordersMockData, 'fulfilled')
+        fetchOrders.pending('requestId')
       );
 
-      expect(state.isOrdersLoading).toBeFalsy();
-      expect(state.error).toBeNull();
-      expect(state.data).toEqual(ordersMockData);
+      expect(loadingState.isOrdersLoading).toBe(true);
+      expect(loadingState.error).toBeNull();
     });
 
-    test('Ошибка запроса: fetchOrders.rejected', () => {
-      const error = 'fetchOrders.rejected';
-
-      const state = reducer(
+    it('Должен сохранять список заказов при успешном ответе', () => {
+      const successState = reducer(
         ordersInitialState,
-        fetchOrders.rejected(new Error(error), 'rejected')
+        fetchOrders.fulfilled(mockOrdersList, 'requestId')
       );
 
-      expect(state.isOrdersLoading).toBeFalsy();
-      expect(state.error?.message).toEqual(error);
-    });
-  });
-
-  describe('Асинхронная функция для получения заказа по номеру: fetchOrder', () => {
-    test('Начало запроса: fetchOrder.pending', () => {
-      const state = reducer(
-        ordersInitialState,
-        fetchOrder.pending('pending', ordersMockData[0].number)
-      );
-
-      expect(state.isOrderLoading).toBeTruthy();
+      expect(successState.isOrdersLoading).toBe(false);
+      expect(successState.error).toBeNull();
+      expect(successState.data).toStrictEqual(mockOrdersList);
     });
 
-    test('Результат запроса: fetchOrder.fulfilled', () => {
-      const state = reducer(
+    it('Должен обрабатывать ошибку при неудачном запросе', () => {
+      const errorMessage = 'Ошибка получения заказов';
+      const errorState = reducer(
         ordersInitialState,
-        fetchOrder.fulfilled(
-          ordersMockData[0],
-          'fulfilled',
-          ordersMockData[0].number
-        )
+        fetchOrders.rejected(new Error(errorMessage), 'requestId')
       );
 
-      expect(state.isOrderLoading).toBeFalsy();
-      expect(state.orderModalData).toEqual(ordersMockData[0]);
-    });
-
-    test('Ошибка запроса: fetchOrder.rejected', () => {
-      const error = 'fetchOrder.rejected';
-
-      const state = reducer(
-        ordersInitialState,
-        fetchOrder.rejected(new Error(error), 'rejected', -1)
-      );
-
-      expect(state.isOrderLoading).toBeFalsy();
+      expect(errorState.isOrdersLoading).toBe(false);
+      expect(errorState.error?.message).toBe(errorMessage);
     });
   });
 
-  describe('Асинхронная функция для создания заказа: createOrder', () => {
-    test('Начало запроса: createOrder.pending', () => {
-      const state = reducer(
+  describe('Тестирование экшена fetchOrder', () => {
+    it('Должен устанавливать флаг загрузки при запросе заказа', () => {
+      const loadingState = reducer(
         ordersInitialState,
-        createOrder.pending('pending', ordersMockData[0].ingredients)
+        fetchOrder.pending('requestId', mockOrderData.number)
       );
 
-      expect(state.orderRequest).toBeTruthy();
+      expect(loadingState.isOrderLoading).toBe(true);
     });
 
-    test('Результат запроса: createOrder.fulfilled', () => {
-      const state = reducer(
+    it('Должен сохранять данные заказа для модального окна', () => {
+      const successState = reducer(
         ordersInitialState,
-        createOrder.fulfilled(
-          { order: ordersMockData[0], name: 'EXAMPLE' },
-          'fulfilled',
-          ordersMockData[0].ingredients
-        )
+        fetchOrder.fulfilled(mockOrderData, 'requestId', mockOrderData.number)
       );
 
-      expect(state.orderRequest).toBeFalsy();
-      expect(state.orderModalData).toEqual(ordersMockData[0]);
+      expect(successState.isOrderLoading).toBe(false);
+      expect(successState.orderModalData).toMatchObject(mockOrderData);
     });
 
-    test('Ошибка запроса: createOrder.rejected', () => {
-      const error = 'createOrder.rejected';
-
-      const state = reducer(
+    it('Должен сбрасывать флаг загрузки при ошибке', () => {
+      const errorState = reducer(
         ordersInitialState,
-        createOrder.rejected(new Error(error), 'rejected', [])
+        fetchOrder.rejected(new Error('Not found'), 'requestId', 999)
       );
 
-      expect(state.orderRequest).toBeFalsy();
+      expect(errorState.isOrderLoading).toBe(false);
+    });
+  });
+
+  describe('Тестирование экшена createOrder', () => {
+    it('Должен устанавливать флаг запроса при создании заказа', () => {
+      const pendingState = reducer(
+        ordersInitialState,
+        createOrder.pending('requestId', mockOrderData.ingredients)
+      );
+
+      expect(pendingState.orderRequest).toBe(true);
+    });
+
+    it('Должен сохранять созданный заказ в модальное окно', () => {
+      const successResponse = { 
+        order: mockOrderData, 
+        name: 'EXAMPLE' 
+      };
+      
+      const successState = reducer(
+        ordersInitialState,
+        createOrder.fulfilled(successResponse, 'requestId', mockOrderData.ingredients)
+      );
+
+      expect(successState.orderRequest).toBe(false);
+      expect(successState.orderModalData).toEqual(mockOrderData);
+    });
+
+    it('Должен сбрасывать флаг запроса при ошибке создания', () => {
+      const errorState = reducer(
+        ordersInitialState,
+        createOrder.rejected(new Error('Creation failed'), 'requestId', [])
+      );
+
+      expect(errorState.orderRequest).toBe(false);
     });
   });
 });

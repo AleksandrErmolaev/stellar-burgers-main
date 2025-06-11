@@ -1,43 +1,46 @@
 import { fetchFeeds, feedsInitialState } from '../src/services/slices';
-
 import reducer from '../src/services/slices/feeds';
 
-const feedsMockData = {
+// Моковые данные для тестирования
+const mockFeedsResponse = {
   orders: [],
   total: 1,
   totalToday: 1
 };
 
-describe('Тестирование feedsReducer', () => {
-  describe('Асинхронная функция для получения ленты заказов: fetchFeeds', () => {
-    test('Начало запроса: fetchFeeds.pending', () => {
-      const state = reducer(feedsInitialState, fetchFeeds.pending('pending'));
-
-      expect(state.isLoading).toBeTruthy();
-      expect(state.error).toBeNull();
-    });
-
-    test('Результат запроса: fetchFeeds.fulfilled', () => {
-      const state = reducer(
-        feedsInitialState,
-        fetchFeeds.fulfilled(feedsMockData, 'fulfilled')
+describe('Тесты для редьюсера feedsReducer', () => {
+  describe('Тестирование асинхронного экшена fetchFeeds', () => {
+    it('Должен корректно обрабатывать состояние начала загрузки', () => {
+      const newState = reducer(
+        feedsInitialState, 
+        fetchFeeds.pending('requestId')
       );
 
-      expect(state.isLoading).toBeFalsy();
-      expect(state.error).toBeNull();
-      expect(state.data).toEqual(feedsMockData);
+      expect(newState.isLoading).toBe(true);
+      expect(newState.error).toBeNull();
     });
 
-    test('Ошибка запроса: fetchFeeds.rejected', () => {
-      const error = 'fetchFeeds.rejected';
-
-      const state = reducer(
+    it('Должен правильно обрабатывать успешный ответ сервера', () => {
+      const resultState = reducer(
         feedsInitialState,
-        fetchFeeds.rejected(new Error(error), 'rejected')
+        fetchFeeds.fulfilled(mockFeedsResponse, 'requestId')
       );
 
-      expect(state.isLoading).toBeFalsy();
-      expect(state.error?.message).toEqual(error);
+      expect(resultState.isLoading).toBe(false);
+      expect(resultState.error).toBeNull();
+      expect(resultState.data).toStrictEqual(mockFeedsResponse);
+    });
+
+    it('Должен корректно обрабатывать ошибку запроса', () => {
+      const errorMessage = 'Network error occurred';
+      const errorState = reducer(
+        feedsInitialState,
+        fetchFeeds.rejected(new Error(errorMessage), 'requestId')
+      );
+
+      expect(errorState.isLoading).toBe(false);
+      expect(errorState.error?.message).toBe(errorMessage);
+      expect(errorState.data).toBeNull();
     });
   });
 });

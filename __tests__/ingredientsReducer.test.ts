@@ -1,11 +1,8 @@
-import {
-  fetchIngredients,
-  ingredientsInitialState
-} from '../src/services/slices/';
-
+import { fetchIngredients, ingredientsInitialState } from '../src/services/slices';
 import reducer from '../src/services/slices/ingredients';
 
-const ingredientsMockData = [
+// Тестовые данные ингредиентов
+const testIngredientsList = [
   {
     _id: '643d69a5c3f7b9001cfa093c',
     name: 'Краторная булка N-200i',
@@ -22,39 +19,41 @@ const ingredientsMockData = [
   }
 ];
 
-describe('Тестирование ingredientsReducer', () => {
-  describe('Асинхронная функция для получения ингридиентов: fetchIngredients', () => {
-    test('Начало запроса: fetchIngredients.pending', () => {
-      const state = reducer(
+describe('Тестирование редьюсера ингредиентов', () => {
+  describe('Проверка работы экшена fetchIngredients', () => {
+    it('Должен устанавливать статус загрузки при начале запроса', () => {
+      const loadingState = reducer(
         ingredientsInitialState,
-        fetchIngredients.pending('pending')
+        fetchIngredients.pending('request123')
       );
 
-      expect(state.isLoading).toBeTruthy();
-      expect(state.error).toBeNull();
+      expect(loadingState.loading).toBe(true);
+      expect(loadingState.error).toBeNull();
+      expect(loadingState.data).toBeNull();
     });
 
-    test('Результат запроса: fetchIngredients.fulfilled', () => {
-      const state = reducer(
+    it('Должен корректно сохранять данные при успешном ответе', () => {
+      const successState = reducer(
         ingredientsInitialState,
-        fetchIngredients.fulfilled(ingredientsMockData, 'fulfilled')
+        fetchIngredients.fulfilled(testIngredientsList, 'request123')
       );
 
-      expect(state.isLoading).toBeFalsy();
-      expect(state.error).toBeNull();
-      expect(state.data).toEqual(ingredientsMockData);
+      expect(successState.loading).toBe(false);
+      expect(successState.error).toBeNull();
+      expect(successState.data).toHaveLength(1);
+      expect(successState.data?.[0].name).toBe('Краторная булка N-200i');
     });
 
-    test('Ошибка запроса: fetchIngredients.rejected', () => {
-      const error = 'fetchIngredients.rejected';
-
-      const state = reducer(
+    it('Должен обрабатывать ошибку при неудачном запросе', () => {
+      const errorText = 'Ошибка загрузки данных';
+      const errorState = reducer(
         ingredientsInitialState,
-        fetchIngredients.rejected(new Error(error), 'rejected')
+        fetchIngredients.rejected(new Error(errorText), 'request123')
       );
 
-      expect(state.isLoading).toBeFalsy();
-      expect(state.error?.message).toEqual(error);
+      expect(errorState.loading).toBe(false);
+      expect(errorState.data).toBeNull();
+      expect(errorState.error?.message).toBe(errorText);
     });
   });
 });

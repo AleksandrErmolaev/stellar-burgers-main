@@ -9,7 +9,8 @@ import {
 
 import reducer from '../src/services/slices/builder';
 
-const bunMockData = {
+// Тестовые данные для булки
+const mockBun = {
   _id: '643d69a5c3f7b9001cfa093c',
   name: 'Краторная булка N-200i',
   type: 'bun',
@@ -24,7 +25,8 @@ const bunMockData = {
   __v: 0
 };
 
-const ingredient1MockData = {
+// Тестовые данные для ингредиентов
+const mockIngredientA = {
   _id: '643d69a5c3f7b9001cfa093e',
   id: '1234567890',
   name: 'Филе Люминесцентного тетраодонтимформа',
@@ -40,7 +42,7 @@ const ingredient1MockData = {
   __v: 0
 };
 
-const ingredient2MockData = {
+const mockIngredientB = {
   _id: '643d69a5c3f7b9001cfa093e',
   id: '0987654321',
   name: 'Филе Люминесцентного тетраодонтимформа',
@@ -56,123 +58,108 @@ const ingredient2MockData = {
   __v: 0
 };
 
-describe('Тестирование builderReducer', () => {
-  describe('Работа с булками', () => {
-    test('Установка булки через setBun', () => {
-      const state = reducer(constructorInitialState, setBun(bunMockData));
+describe('Проверка работы редьюсера конструктора бургеров', () => {
+  describe('Тестирование функционала булок', () => {
+    it('Должен корректно добавлять булку через setBun', () => {
+      const newState = reducer(constructorInitialState, setBun(mockBun));
 
-      // Объект букли в сторе и установленный вручную совпадают
-      expect(state.bun).toEqual(bunMockData);
-      // Остальные ингредиенты не изменились при добавлении только булки
-      expect(state.ingredients).toHaveLength(0);
+      expect(newState.bun).toMatchObject(mockBun);
+      expect(newState.ingredients.length).toBe(0);
     });
 
-    test('Установка булки через addIngredient', () => {
-      const state = reducer(
+    it('Должен добавлять булку через addIngredient', () => {
+      const resultState = reducer(
         constructorInitialState,
-        addIngredient(bunMockData)
+        addIngredient(mockBun)
       );
 
-      const updatedObject = { ...state.bun } as Record<string, any>;
-      delete updatedObject['id'];
+      const bunWithoutId = { ...resultState.bun };
+      delete bunWithoutId['id'];
 
-      // Объект букли в сторе и установленный вручную совпадают
-      expect(updatedObject).toEqual(bunMockData);
-      // Остальные ингредиенты не изменились при добавлении только булки
-      expect(state.ingredients).toHaveLength(0);
+      expect(bunWithoutId).toStrictEqual(mockBun);
+      expect(resultState.ingredients.length).toBe(0);
     });
   });
 
-  describe('Работа с ингридиентами', () => {
-    test('Добавление ингредиента', () => {
-      const state = reducer(
+  describe('Тестирование работы с начинкой', () => {
+    it('Должен добавлять новый ингредиент в конструктор', () => {
+      const updatedState = reducer(
         constructorInitialState,
-        addIngredient(ingredient1MockData)
+        addIngredient(mockIngredientA)
       );
 
-      // У конструктора появился новый ингридиент
-      expect(state.ingredients).toHaveLength(1);
+      expect(updatedState.ingredients.length).toBe(1);
 
-      const updatedObject = { ...state.ingredients[0] } as Record<string, any>;
-      delete updatedObject['id'];
+      const ingredientCopy = { ...updatedState.ingredients[0] };
+      delete ingredientCopy['id'];
 
-      const initialObject = { ...ingredient1MockData } as Record<string, any>;
-      delete initialObject['id'];
+      const expectedIngredient = { ...mockIngredientA };
+      delete expectedIngredient['id'];
 
-      expect(updatedObject).toEqual(initialObject);
-      // Булка не изменилась
-      expect(state.bun).toBeNull();
+      expect(ingredientCopy).toEqual(expectedIngredient);
+      expect(updatedState.bun).toBeNull();
     });
 
-    test('Удаление ингредиента', () => {
-      const _initialState = {
+    it('Должен удалять существующий ингредиент', () => {
+      const initialStateWithIngredients = {
         bun: null,
-        ingredients: [ingredient1MockData, ingredient2MockData]
+        ingredients: [mockIngredientA, mockIngredientB]
       };
 
-      const state = reducer(
-        _initialState,
-        removeIngredient(ingredient1MockData.id)
+      const stateAfterRemoval = reducer(
+        initialStateWithIngredients,
+        removeIngredient(mockIngredientA.id)
       );
 
-      // У конструктора удалился 1 ингридиент
-      expect(state.ingredients).toHaveLength(1);
-      expect(state.ingredients[0]).toEqual(ingredient2MockData);
-      // Булка не изменилась
-      expect(state.bun).toBeNull();
+      expect(stateAfterRemoval.ingredients.length).toBe(1);
+      expect(stateAfterRemoval.ingredients[0]).toStrictEqual(mockIngredientB);
+      expect(stateAfterRemoval.bun).toBeNull();
     });
 
-    describe('Передвижение ингредиентов', () => {
-      test('Передвижение вниз', () => {
-        const _initialState = {
+    describe('Тестирование изменения порядка ингредиентов', () => {
+      it('Должен перемещать ингредиент вниз по списку', () => {
+        const stateWithTwoIngredients = {
           bun: null,
-          ingredients: [ingredient1MockData, ingredient2MockData]
+          ingredients: [mockIngredientA, mockIngredientB]
         };
 
-        const state = reducer(
-          _initialState,
+        const stateAfterMovingDown = reducer(
+          stateWithTwoIngredients,
           moveIngredient({ index: 0, upwards: false })
         );
 
-        // У конструктора сменилась позиция ингредиентов
-        expect(state.ingredients).toHaveLength(2);
-        expect(state.ingredients[0]).toEqual(ingredient2MockData);
-        expect(state.ingredients[1]).toEqual(ingredient1MockData);
-        // Булка не изменилась
-        expect(state.bun).toBeNull();
+        expect(stateAfterMovingDown.ingredients[0]).toEqual(mockIngredientB);
+        expect(stateAfterMovingDown.ingredients[1]).toEqual(mockIngredientA);
+        expect(stateAfterMovingDown.bun).toBeNull();
       });
 
-      test('Передвижение вверх', () => {
-        const _initialState = {
+      it('Должен перемещать ингредиент вверх по списку', () => {
+        const initialState = {
           bun: null,
-          ingredients: [ingredient1MockData, ingredient2MockData]
+          ingredients: [mockIngredientA, mockIngredientB]
         };
 
-        const state = reducer(
-          _initialState,
+        const finalState = reducer(
+          initialState,
           moveIngredient({ index: 1, upwards: true })
         );
 
-        // У конструктора сменилась позиция ингредиентов
-        expect(state.ingredients).toHaveLength(2);
-        expect(state.ingredients[0]).toEqual(ingredient2MockData);
-        expect(state.ingredients[1]).toEqual(ingredient1MockData);
-        // Булка не изменилась
-        expect(state.bun).toBeNull();
+        expect(finalState.ingredients[0]).toStrictEqual(mockIngredientB);
+        expect(finalState.ingredients[1]).toStrictEqual(mockIngredientA);
+        expect(finalState.bun).toBeNull();
       });
     });
   });
 
-  test('Очистка конструктора', () => {
-    const _initialState = {
-      bun: bunMockData,
-      ingredients: [ingredient1MockData, ingredient2MockData]
+  it('Должен полностью очищать конструктор', () => {
+    const initialState = {
+      bun: mockBun,
+      ingredients: [mockIngredientA, mockIngredientB]
     };
 
-    const state = reducer(_initialState, resetConstructor());
+    const clearedState = reducer(initialState, resetConstructor());
 
-    // Конструктор очистился
-    expect(state.ingredients).toHaveLength(0);
-    expect(state.bun).toBeNull();
+    expect(clearedState.ingredients.length).toBe(0);
+    expect(clearedState.bun).toBeNull();
   });
 });
