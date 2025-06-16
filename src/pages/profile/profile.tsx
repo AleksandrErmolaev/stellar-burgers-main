@@ -1,11 +1,17 @@
-import { updateUser } from '@slices';
-import { useDispatch, useSelector } from '@store';
 import { ProfileUI } from '@ui-pages';
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
+import {
+  fetchUpdateUser,
+  selectLoading,
+  selectUser
+} from '../../slices/stellarBurgerSlice';
+import { Preloader } from '@ui';
+import { useAppSelector, useAppDispatch } from '../../services/store';
 
 export const Profile: FC = () => {
-  const { data: user } = useSelector((store) => store.user);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
+  const isLoading = useAppSelector(selectLoading);
 
   const [formValue, setFormValue] = useState({
     name: user.name,
@@ -28,7 +34,7 @@ export const Profile: FC = () => {
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-    dispatch(updateUser(formValue));
+    dispatch(fetchUpdateUser(formValue));
   };
 
   const handleCancel = (e: SyntheticEvent) => {
@@ -47,7 +53,11 @@ export const Profile: FC = () => {
     }));
   };
 
-    return (
+  if (isLoading) {
+    return <Preloader />;
+  }
+
+  return (
     <ProfileUI
       formValue={formValue}
       isFormChanged={isFormChanged}

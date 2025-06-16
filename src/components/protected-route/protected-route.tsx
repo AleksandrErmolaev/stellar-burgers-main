@@ -1,28 +1,35 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { Preloader } from '@ui';
-import { useSelector } from '@store';
-import { FC } from 'react';
-import { TProtectedRouteProps } from './type';
+import {
+  selectIsAuthenticated,
+  selectIsInit
+} from '../../slices/stellarBurgerSlice';
+import { Preloader } from '../ui/preloader';
+import { useAppSelector } from '../../services/store';
 
-export const ProtectedRoute: FC<TProtectedRouteProps> = ({
-  onlyUnAuth = false,
-  children
-}) => {
-  const { isAuthChecked, data: user } = useSelector((state) => state.user);
+type ProtectedRouteProps = {
+  children: React.ReactElement;
+  unAuthOnly?: boolean;
+};
 
+export const ProtectedRoute = ({
+  children,
+  unAuthOnly
+}: ProtectedRouteProps) => {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const isInit = useAppSelector(selectIsInit);
   const location = useLocation();
 
-  if (!isAuthChecked) {
+  if (!isInit) {
     return <Preloader />;
   }
 
-  if (onlyUnAuth && user.email && user.name) {
-    const { from } = location.state || { from: { pathname: '/' } };
-    return <Navigate to={from} />;
+  if (!unAuthOnly && !isAuthenticated) {
+    return <Navigate replace to='/login' state={{ from: location }} />;
   }
 
-  if (!onlyUnAuth && (!user.email || !user.name)) {
-    return <Navigate to='/login' state={{ from: location }} />;
+  if (unAuthOnly && isAuthenticated) {
+    const from = location.state?.from || { pathname: '/' };
+    return <Navigate replace to={from} />;
   }
 
   return children;

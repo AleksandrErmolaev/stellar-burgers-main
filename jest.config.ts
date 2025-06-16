@@ -6,12 +6,14 @@ const config: Config = {
   coverageProvider: 'v8',
   preset: 'ts-jest',
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {}]
-  },
-  moduleNameMapper: {
-    '@api': '<rootDir>/src/utils/burger-api.ts',
-    '@auth': '<rootDir>/src/utils/auth.ts',
-    '@slices': '<rootDir>/src/services/slices'
+    // '^.+\\.[tj]sx?$' для обработки файлов js/ts с помощью `ts-jest`
+    // '^.+\\.m?[tj]sx?$' для обработки файлов js/ts/mjs/mts с помощью `ts-jest`
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        // настройки для ts-jest
+      }
+    ]
   }
 };
 

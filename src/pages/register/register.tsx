@@ -1,38 +1,61 @@
-import { FC, SyntheticEvent, useState } from 'react';
+import { FC, SyntheticEvent, useEffect } from 'react';
 import { RegisterUI } from '@ui-pages';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from '@store';
-import { register } from '@slices';
+import {
+  fetchRegisterUser,
+  getUserThunk,
+  removeErrorText,
+  selectErrorText,
+  selectLoading
+} from '../../slices/stellarBurgerSlice';
+import { Preloader } from '@ui';
+import { useAppSelector, useAppDispatch } from '../../services/store';
+import { useForm } from '../../hooks/useForm';
+import { setCookie } from '../../utils/cookie';
 
 export const Register: FC = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { values, handleChange } = useForm({
+    userName: '',
+    email: '',
+    password: ''
+  });
+  const isLoading = useAppSelector(selectLoading);
+  const error = useAppSelector(selectErrorText);
 
-  const { registerError } = useSelector((state) => state.user);
+  useEffect(() => {
+    dispatch(removeErrorText());
+  }, []);
 
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = async (e: SyntheticEvent) => {
+  const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-
-    try {
-      await dispatch(register({ name: userName, email, password })).unwrap();
-
-      navigate('/profile', { replace: true });
-    } catch (_) {}
+    dispatch(
+      fetchRegisterUser({
+        name: values.userName,
+        password: values.password,
+        email: values.email
+      })
+    )
+      .unwrap()
+      .then((payload) => {
+        localStorage.setItem('refreshToken', payload.refreshToken);
+        setCookie('accessToken', payload.accessToken);
+        dispatch(getUserThunk());
+      });
   };
+
+  if (isLoading) {
+    return <Preloader />;
+  }
 
   return (
     <RegisterUI
-      errorText={registerError?.message}
-      email={email}
-      userName={userName}
-      password={password}
-      setEmail={setEmail}
-      setPassword={setPassword}
-      setUserName={setUserName}
+      errorText={error}
+      email={values.email}
+      userName={values.userName}
+      password={values.password}
+      setEmail={handleChange}
+      setPassword={handleChange}
+      setUserName={handleChange}
       handleSubmit={handleSubmit}
     />
   );

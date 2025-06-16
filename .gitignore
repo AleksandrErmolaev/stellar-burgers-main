@@ -1,6 +1,5 @@
-node_modulesMore actions
+coverage
+node_modules
 .env
 .idea
-.vscode
 dist
-coverage
